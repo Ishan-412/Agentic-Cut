@@ -1,0 +1,205 @@
+# ============================================================
+# MOVIEPY CHEATSHEET — Accurate API Reference for Code Agent
+# Version: MoviePy 2.x  |  Use ONLY methods listed here.
+# ============================================================
+
+## 1. IMPORTS (Always use these exact imports — MoviePy 2.x syntax)
+```python
+from moviepy import (
+    VideoFileClip, AudioFileClip, ImageClip,
+    TextClip, CompositeVideoClip, concatenate_videoclips,
+    ColorClip
+)
+```
+
+## CRITICAL: MoviePy 2.x has NO `moviepy.editor` submodule.
+## Always import from `moviepy` directly.
+
+## 2. LOAD & INSPECT A VIDEO
+```python
+clip = VideoFileClip("input.mp4")
+duration      = clip.duration        # float, seconds
+fps           = clip.fps             # float
+width, height = clip.size            # (int, int)
+```
+
+## 3. SUBCLIP (Trim)
+```python
+# Trim from t_start to t_end (seconds)
+trimmed = clip.subclipped(t_start=0, t_end=5)
+trimmed = clip.subclipped(1, 10)
+trimmed = clip.subclipped(0, clip.duration - 2)   # remove last 2s
+```
+## NOTE: MoviePy 2.x uses `subclipped()` NOT `subclip()`.
+
+## 4. RESIZE / SCALE
+```python
+resized = clip.resized(height=720)          # maintain aspect ratio
+resized = clip.resized(width=1080)
+resized = clip.resized((1920, 1080))        # exact width x height
+resized = clip.resized(0.5)                 # 50% of original
+```
+## NOTE: MoviePy 2.x uses `resized()` NOT `resize()`.
+
+## 5. CROP
+```python
+# crop(x1, y1, x2, y2) — pixel coordinates
+cropped = clip.cropped(x1=100, y1=0, x2=500, y2=720)
+# Crop to 9:16 from center (e.g. for Shorts)
+w, h = clip.size
+new_w = int(h * 9 / 16)
+x_center = w // 2
+cropped = clip.cropped(x1=x_center - new_w//2, y1=0, x2=x_center + new_w//2, y2=h)
+```
+## NOTE: MoviePy 2.x uses `cropped()` NOT `crop()`.
+
+## 6. ROTATE
+```python
+rotated = clip.rotated(90)    # degrees, counter-clockwise
+rotated = clip.rotated(-90)   # clockwise
+```
+## NOTE: MoviePy 2.x uses `rotated()` NOT `rotate()`.
+
+## 7. SPEED
+```python
+faster = clip.with_speed_scaled(1.5)    # 1.5x speed (shorter duration)
+slower = clip.with_speed_scaled(0.5)    # 0.5x speed (longer duration)
+```
+## NOTE: MoviePy 2.x uses `with_speed_scaled()` NOT `speedx()`.
+
+## 8. VOLUME ADJUSTMENT
+```python
+louder  = clip.multiply_volume(1.5)   # 1.5x volume
+quieter = clip.multiply_volume(0.5)   # half volume
+muted   = clip.multiply_volume(0)     # mute audio
+```
+## NOTE: MoviePy 2.x uses `multiply_volume()` NOT `volumex()`.
+
+## 9. MUTE (remove audio track)
+```python
+no_audio = clip.without_audio()
+```
+
+## 10. CONCATENATE CLIPS
+```python
+from moviepy import concatenate_videoclips
+final = concatenate_videoclips([clip1, clip2, clip3], method="compose")
+# method="chain" if all clips have identical dimensions
+final = concatenate_videoclips([clip1, clip2], method="chain")
+```
+
+## 11. COLOR CLIP (solid color video)
+```python
+color_clip = ColorClip(size=(1280, 720), color=(255, 0, 0), duration=3)
+# color is RGB tuple
+```
+
+## 12. COMPOSITE VIDEO (overlay)
+```python
+# Overlay clip2 on top of clip1
+band = ColorClip(size=(clip.w, 60), color=(30, 30, 30), duration=clip.duration)
+band = band.with_position((0, clip.h - 60)).with_opacity(0.7)
+final = CompositeVideoClip([clip, band])
+```
+## NOTE: MoviePy 2.x uses `with_position()` NOT `set_position()`.
+## NOTE: MoviePy 2.x uses `with_opacity()` NOT `set_opacity()`.
+## NOTE: MoviePy 2.x uses `with_duration()` NOT `set_duration()`.
+
+## 13. SET AUDIO
+```python
+audio = AudioFileClip("music.mp3").subclipped(0, clip.duration)
+final = clip.with_audio(audio)
+```
+## NOTE: MoviePy 2.x uses `with_audio()` NOT `set_audio()`.
+
+## 14. WRITE OUTPUT — Standard Args (ALWAYS USE THESE)
+```python
+clip.write_videofile(
+    "output.mp4",
+    codec="libx264",
+    audio_codec="aac",
+    fps=clip.fps,          # preserve original fps
+    logger=None            # suppress verbose moviepy output
+)
+```
+
+## 15. CLOSE CLIPS (Memory Management)
+```python
+clip.close()
+final.close()
+```
+
+## 16. COMPLETE EXAMPLE — Trim + Speed + Mute + Save
+```python
+from moviepy import VideoFileClip
+
+clip = VideoFileClip(video_path)
+result = clip.subclipped(0, 10).with_speed_scaled(1.5).without_audio()
+result.write_videofile(
+    output_path,
+    codec="libx264",
+    audio_codec="aac",
+    fps=result.fps,
+    logger=None
+)
+clip.close()
+result.close()
+```
+
+## 17. COMPLETE EXAMPLE — Crop to 9:16 Vertical + Save
+```python
+from moviepy import VideoFileClip
+
+clip = VideoFileClip(video_path)
+w, h = clip.size
+new_w = int(h * 9 / 16)
+x_c = w // 2
+cropped = clip.cropped(x1=x_c - new_w//2, y1=0, x2=x_c + new_w//2, y2=h)
+cropped.write_videofile(
+    output_path,
+    codec="libx264",
+    audio_codec="aac",
+    fps=clip.fps,
+    logger=None
+)
+clip.close()
+cropped.close()
+```
+
+## 18. COMPLETE EXAMPLE — Trim first 1 second off (start from 1s)
+```python
+from moviepy import VideoFileClip
+
+clip = VideoFileClip(video_path)
+result = clip.subclipped(1, clip.duration)
+result.write_videofile(
+    output_path,
+    codec="libx264",
+    audio_codec="aac",
+    fps=clip.fps,
+    logger=None
+)
+clip.close()
+result.close()
+```
+
+## FORBIDDEN / NON-EXISTENT METHODS — DO NOT USE
+- `from moviepy.editor import ...` — DOES NOT EXIST in MoviePy 2.x
+- `clip.subclip()` — does not exist in 2.x, use `clip.subclipped()`
+- `clip.resize()` — does not exist in 2.x, use `clip.resized()`
+- `clip.crop()` — does not exist in 2.x, use `clip.cropped()`
+- `clip.rotate()` — does not exist in 2.x, use `clip.rotated()`
+- `clip.speedx()` — does not exist in 2.x, use `clip.with_speed_scaled()`
+- `clip.volumex()` — does not exist in 2.x, use `clip.multiply_volume()`
+- `clip.set_position()` — does not exist in 2.x, use `clip.with_position()`
+- `clip.set_duration()` — does not exist in 2.x, use `clip.with_duration()`
+- `clip.set_audio()` — does not exist in 2.x, use `clip.with_audio()`
+- `clip.set_opacity()` — does not exist in 2.x, use `clip.with_opacity()`
+- `clip.set_fps()` — does not exist in 2.x, use `clip.with_fps()`
+- `clip.cut()` / `clip.trim()` / `clip.mute()` / `clip.scale()` — never existed
+
+## IMPORTANT NOTES
+- `video_path` and `output_path` will be injected as Python string variables — use them directly.
+- Always call `write_videofile()` as the final step — it triggers rendering.
+- Never use `os`, `subprocess`, `sys`, `shutil`, or `socket` — these are blocked.
+- The output file must always be saved to the exact path in the variable `output_path`.
