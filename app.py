@@ -625,7 +625,7 @@ MODELS = {
 
 def init_session():
     defaults = {
-        "api_key":           os.environ.get("GOOGLE_API_KEY", ""),
+        "api_key":           "",  # Users enter their own key
         "video_path":        None,
         "output_path":       None,
         "uploaded_filename": None,
@@ -777,12 +777,30 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         
-        st.markdown('<div class="ui-label">API Settings</div>', unsafe_allow_html=True)
+        st.markdown('<div class="ui-label">Gemini API Key</div>', unsafe_allow_html=True)
         api_key_val = st.text_input(
-            "API", value=st.session_state.api_key,
+            "API Key", value=st.session_state.api_key,
+            placeholder="Paste your Gemini API key...",
             type="password", label_visibility="collapsed",
         )
-        if api_key_val: st.session_state.api_key = api_key_val
+        if api_key_val:
+            st.session_state.api_key = api_key_val
+        st.markdown(
+            '<div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-muted);margin-top:0.4rem;">'
+            'Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" '
+            'style="color:var(--neon-yellow);text-decoration:none;">aistudio.google.com</a>'
+            '</div>',
+            unsafe_allow_html=True
+        )
+        if not st.session_state.api_key:
+            st.markdown(
+                '<div style="background:rgba(229,255,0,0.06);border:1px solid rgba(229,255,0,0.2);'
+                'border-radius:8px;padding:0.6rem 0.8rem;margin-top:0.75rem;'
+                'font-family:var(--font-mono);font-size:0.72rem;color:rgba(229,255,0,0.8);">'
+                '⚠ Enter your API key above to run edits'
+                '</div>',
+                unsafe_allow_html=True
+            )
 
         st.markdown('<div class="ui-label" style="margin-top:1rem">Model Engine</div>', unsafe_allow_html=True)
         selected_model = st.selectbox("Model", list(MODELS.keys()), label_visibility="collapsed")
