@@ -127,21 +127,88 @@ def check_code_safety(code: str) -> None:
 # 3. VIDEO METADATA EXTRACTION
 # ============================================================
 
-def get_video_metadata(video_path: str) -> dict:
-    """Extract basic metadata from a video file using MoviePy."""
+def sanitize_video(video_path: str) -> str:
+    """
+    Pre-convert problematic video formats (HEVC, Apple QuickTime .MOV, etc.)
+    to a standard H.264 MP4 that MoviePy can reliably parse.
+
+    iPhone videos in particular use HEVC (H.265) with Apple-specific QuickTime
+    metadata that triggers a float+str TypeError inside moviepy's ffmpeg_reader.
+    Re-encoding to H.264 MP4 strips that metadata and fixes the issue.
+
+    Returns the path to the sanitized file (may be the same path if no
+    conversion was needed).
+    """
+    import subprocess
+    path = Path(video_path)
+    ext = path.suffix.lower()
+
+    # Detect HEVC/MOV files that need conversion
+    needs_conversion = ext in {".mov", ".hevc", ".m4v"}
+    if not needs_conversion:
+        # Also probe for HEVC codec even in .mp4 containers
+        try:
+            probe = subprocess.run(
+                ["ffprobe", "-v", "error", "-select_streams", "v:0",
+                 "-show_entries", "stream=codec_name", "-of", "default=nw=1:nk=1",
+                 str(path)],
+                capture_output=True, text=True, timeout=10
+            )
+            if "hevc" in probe.stdout.lower():
+                needs_conversion = True
+        except Exception:
+            pass
+
+    if not needs_conversion:
+        return video_path
+
+    out_path = path.with_suffix("").with_name(path.stem + "_safe.mp4")
+    if out_path.exists():
+        return str(out_path)
+
     try:
-        clip = VideoFileClip(video_path)
+        result = subprocess.run(
+            [
+                "ffmpeg", "-y",
+                "-i", str(path),
+                "-c:v", "libx264",       # Re-encode video to H.264
+                "-preset", "fast",
+                "-crf", "23",
+                "-c:a", "aac",           # Re-encode audio to AAC
+                "-map_metadata", "-1",   # Strip all Apple/QuickTime metadata
+                "-movflags", "+faststart",
+                str(out_path),
+            ],
+            capture_output=True, text=True, timeout=120
+        )
+        if result.returncode == 0 and out_path.exists():
+            return str(out_path)
+        else:
+            # Conversion failed — return original and let MoviePy try
+            return video_path
+    except Exception:
+        return video_path
+
+
+def get_video_metadata(video_path: str) -> dict:
+    """Extract basic metadata from a video file using MoviePy.
+    Sanitizes HEVC/MOV files first to avoid Apple QuickTime metadata bugs."""
+    try:
+        safe_path = sanitize_video(video_path)
+        clip = VideoFileClip(safe_path)
         meta = {
             "duration": round(clip.duration, 2),
             "fps": round(clip.fps, 2),
             "width": clip.size[0],
             "height": clip.size[1],
             "size_mb": round(os.path.getsize(video_path) / (1024 * 1024), 2),
+            "sanitized_path": safe_path,   # Pass sanitized path downstream
         }
         clip.close()
         return meta
     except Exception as e:
         return {"error": str(e), "duration": 0, "fps": 24, "width": 0, "height": 0, "size_mb": 0}
+
 
 
 # ============================================================
@@ -229,8 +296,14 @@ Please create a step-by-step editing plan."""
     edit_plan = _extract_text(response.content)
     logs.append("✅ [Planner] Edit plan generated successfully.")
 
+    # Use the sanitized path (H.264 MP4) for all downstream nodes
+    safe_path = meta.get("sanitized_path", state["video_path"])
+    if safe_path != state["video_path"]:
+        logs.append(f"🔄 [Planner] Converted HEVC/MOV → H.264 MP4 for compatibility.")
+
     return {
         **state,
+        "video_path": safe_path,   # Downstream nodes use the safe file
         "edit_plan": edit_plan,
         "logs": logs,
     }
