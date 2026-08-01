@@ -772,25 +772,7 @@ def main():
 """, height=0)
 
 
-    # ── TOP NAVIGATION ───────────────────────────────────────
-    st.markdown("""
-    <div class="top-nav">
-        <div class="nav-brand" style="font-size: 2.5rem; letter-spacing: -0.05em; gap: 0.75rem;">
-            <div class="brand-mark" style="width: 28px; height: 28px; border-radius: 6px;"></div>
-            AGENTIC-CUT
-        </div>
-        <div class="nav-links">
-            <span>Agents</span>
-            <span>Documentation</span>
-            <span>GitHub</span>
-            <span>Community</span>
-        </div>
-        <div style="display:flex; gap:1rem;">
-            <div class="pill">Feedback •</div>
-            <div class="pill" style="background:var(--pure-white); color:var(--pure-black);">Deploy •</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    # Removed top navigation since it was non-functional mockup
 
     # ── SIDEBAR ──────────────────────────────────────────────
     with st.sidebar:
