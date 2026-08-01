@@ -135,7 +135,9 @@ h1, h2, h3 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.25rem 0 1.5rem 0;
+    padding: 0 0 1.5rem 0;
+    margin-top: -2.5rem;
+    padding-right: 130px; /* prevent overlap with Streamlit toolbar */
     border-bottom: 1px solid var(--border-soft);
     margin-bottom: 0;
 }
@@ -362,7 +364,7 @@ button[data-testid="baseButton-primary"]:hover {
 }
 
 /* Block container */
-.block-container { padding-top: 1.5rem !important; padding-bottom: 3rem !important; }
+.block-container { padding-top: 2.5rem !important; padding-bottom: 3rem !important; }
 
 /* ====================================================
    FINAL POLISH ADDITIONS
@@ -800,7 +802,6 @@ def main():
         </div>
         <div style="display:flex; gap:1rem;">
             <a href="https://github.com/Ishan-412/Agentic-Cut/issues/new" target="_blank" class="pill">Feedback •</a>
-            <a href="https://share.streamlit.io/" target="_blank" class="pill pill-solid" style="background:var(--pure-white); color:var(--pure-black);">Deploy •</a>
         </div>
     </div>
     """, unsafe_allow_html=True)
