@@ -237,7 +237,7 @@ def _extract_text(content) -> str:
     return str(content)
 
 
-def _get_llm(api_key: str, model_name: str = "gemini-1.5-flash") -> ChatGoogleGenerativeAI:
+def _get_llm(api_key: str, model_name: str = "gemini-2.5-flash") -> ChatGoogleGenerativeAI:
     return ChatGoogleGenerativeAI(
         model=model_name,
         google_api_key=api_key,
@@ -287,7 +287,7 @@ Video Metadata:
 
 Please create a step-by-step editing plan."""
 
-    llm = _get_llm(api_key, state.get("model_name", "gemini-1.5-flash"))
+    llm = _get_llm(api_key, state.get("model_name", "gemini-2.5-flash"))
     response = llm.invoke([
         SystemMessage(content=system_prompt),
         HumanMessage(content=human_message),
@@ -373,7 +373,7 @@ Do NOT repeat the same mistake. Output only the corrected Python code.
 {error_section}
 Write the complete Python script now."""
 
-    llm = _get_llm(api_key, state.get("model_name", "gemini-1.5-flash"))
+    llm = _get_llm(api_key, state.get("model_name", "gemini-2.5-flash"))
     response = llm.invoke([
         SystemMessage(content=system_prompt),
         HumanMessage(content=human_message),
@@ -487,7 +487,7 @@ def router_edge(state: State) -> str:
 # 9. GRAPH ASSEMBLY
 # ============================================================
 
-def build_graph(api_key: str, model_name: str = "gemini-1.5-flash", quality: str = "high") -> StateGraph:
+def build_graph(api_key: str, model_name: str = "gemini-2.5-flash", quality: str = "high") -> StateGraph:
     """Build and compile the LangGraph state machine."""
 
     graph = StateGraph(State)
@@ -526,7 +526,7 @@ def run_agent(
     prompt: str,
     api_key: str,
     output_path: str = "final_output.mp4",
-    model_name: str = "gemini-1.5-flash",
+    model_name: str = "gemini-2.5-flash",
     quality: str = "high",
 ) -> Generator[dict, None, None]:
     """
