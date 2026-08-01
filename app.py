@@ -90,7 +90,13 @@ header { background: transparent !important; box-shadow: none !important; }
 [data-testid="stToolbar"] {
     background: transparent !important;
     box-shadow: none !important;
-    /* Do NOT hide the toolbar — it contains stExpandSidebarButton */
+}
+/* Hide the Streamlit GitHub badge in the top right */
+.viewerBadge_container__1QSob,
+.viewerBadge_link__1S137,
+.styles_viewerBadge__1yB5_,
+[data-testid="stGitHubBadge"] {
+    display: none !important;
 }
 
 /* Sidebar expand/collapse toggle — subtle dark button with neon accent */
