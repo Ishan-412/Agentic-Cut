@@ -288,6 +288,7 @@ button[data-testid="baseButton-primary"] {
     font-weight: 800 !important;
     letter-spacing: 0.02em !important;
     box-shadow: 0 0 16px rgba(229,255,0,0.25) !important;
+    height: 58px !important;
 }
 /* On hover: intensify neon yellow glow, don't invert */
 button[data-testid="baseButton-primary"]:hover {
@@ -915,8 +916,6 @@ def main():
             placeholder="✨ Describe how you want to edit your video...",
             label_visibility="collapsed"
         )
-        if not prompt_val:
-            st.markdown('<div style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 0.4rem; padding-left: 22px;">Examples: • Remove all pauses • Create TikTok clips • Add subtitles • Blur faces</div>', unsafe_allow_html=True)
         st.session_state.prompt = prompt_val
     with cmd_col2:
         run_clicked = st.button("Run Edit", type="primary", use_container_width=True, disabled=st.session_state.running, key="run_btn")
