@@ -301,7 +301,7 @@ button[data-testid="baseButton-primary"]:hover {
 /* === Inputs === */
 .stTextInput > div > div > input {
     background: var(--input-bg) !important;
-    border: 1px solid rgba(255,255,255,0.12) !important;
+    border: 1px solid rgba(198,255,0,0.4) !important;
     border-radius: 9999px !important;
     color: rgba(255,255,255,0.95) !important;
     font-family: var(--font-display) !important;
@@ -311,7 +311,7 @@ button[data-testid="baseButton-primary"]:hover {
     transition: border-color 200ms ease, box-shadow 200ms ease;
 }
 .stTextInput > div > div > input:hover {
-    border-color: rgba(255,255,255,0.25) !important;
+    border-color: rgba(198,255,0,0.8) !important;
 }
 .stTextInput > div > div > input:focus {
     border-color: #C6FF00 !important;
