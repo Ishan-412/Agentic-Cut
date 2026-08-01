@@ -301,22 +301,25 @@ button[data-testid="baseButton-primary"]:hover {
 /* === Inputs === */
 .stTextInput > div > div > input {
     background: var(--input-bg) !important;
-    border: 1px solid var(--border-soft) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
     border-radius: 9999px !important;
-    color: var(--text-primary) !important;
+    color: rgba(255,255,255,0.95) !important;
     font-family: var(--font-display) !important;
     font-size: 1rem !important;
-    padding: 0.75rem 1.5rem !important;
-    min-height: 52px !important;
+    padding: 0.75rem 22px !important;
+    min-height: 58px !important;
     transition: border-color 200ms ease, box-shadow 200ms ease;
 }
+.stTextInput > div > div > input:hover {
+    border-color: rgba(255,255,255,0.25) !important;
+}
 .stTextInput > div > div > input:focus {
-    border-color: var(--border-mid) !important;
-    box-shadow: 0 0 0 3px rgba(229, 255, 0, 0.05) !important;
+    border-color: #C6FF00 !important;
+    box-shadow: 0 0 0 3px rgba(198,255,0,0.12) !important;
     outline: none !important;
 }
 .stTextInput > div > div > input::placeholder {
-    color: var(--text-muted) !important;
+    color: rgba(255,255,255,0.6) !important;
 }
 .stTextArea textarea {
     background: var(--input-bg) !important;
@@ -530,11 +533,7 @@ button[data-testid="baseButton-primary"]:hover::before { left: 160%; }
     width: 100%;
 }
 
-/* === Input focus glow === */
-.stTextInput > div > div > input:focus {
-    border-color: rgba(229,255,0,0.4) !important;
-    box-shadow: 0 0 0 3px rgba(229,255,0,0.07), 0 0 20px rgba(229,255,0,0.04) !important;
-}
+/* Removed duplicate input focus glow */
 
 /* === Pipeline container glass card === */
 .pipeline-wrap {
@@ -913,9 +912,11 @@ def main():
     with cmd_col1:
         prompt_val = st.text_input(
             "Instruction", value=st.session_state.prompt,
-            placeholder="Type your editing instruction here...",
+            placeholder="✨ Describe how you want to edit your video...",
             label_visibility="collapsed"
         )
+        if not prompt_val:
+            st.markdown('<div style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 0.4rem; padding-left: 22px;">Examples: • Remove all pauses • Create TikTok clips • Add subtitles • Blur faces</div>', unsafe_allow_html=True)
         st.session_state.prompt = prompt_val
     with cmd_col2:
         run_clicked = st.button("Run Edit", type="primary", use_container_width=True, disabled=st.session_state.running, key="run_btn")
