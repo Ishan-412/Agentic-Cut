@@ -662,7 +662,7 @@ def init_session():
         "running":           False,
         "error_message":     "",
         "video_meta":        {},
-        "model_name":        "gemini-2.5-flash",
+        "model_name":        "gemini-1.5-pro",
         "quality":           "high",
         "export_format":     "MP4",
         "trigger_run":       False,
