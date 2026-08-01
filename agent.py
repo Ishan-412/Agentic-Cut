@@ -251,7 +251,7 @@ def _safe_invoke(api_key: str, model_name: str, messages: list):
     except Exception as e:
         error_msg = str(e)
         if "403" in error_msg or "404" in error_msg or "PERMISSION_DENIED" in error_msg or "NOT_FOUND" in error_msg:
-            fallback_model = "gemini-1.5-pro"
+            fallback_model = "gemini-2.0-flash"
             if model_name != fallback_model:
                 print(f"Model {model_name} failed with {error_msg}. Falling back to {fallback_model}.")
                 llm = _get_llm(api_key, fallback_model)
@@ -303,7 +303,7 @@ Please create a step-by-step editing plan."""
 
     response = _safe_invoke(
         api_key,
-        state.get("model_name", "gemini-1.5-pro"),
+        state.get("model_name", "gemini-2.0-flash"),
         [
             SystemMessage(content=system_prompt),
             HumanMessage(content=human_message),
@@ -392,7 +392,7 @@ Write the complete Python script now."""
 
     response = _safe_invoke(
         api_key,
-        state.get("model_name", "gemini-1.5-pro"),
+        state.get("model_name", "gemini-2.0-flash"),
         [
             SystemMessage(content=system_prompt),
             HumanMessage(content=human_message),
@@ -507,7 +507,7 @@ def router_edge(state: State) -> str:
 # 9. GRAPH ASSEMBLY
 # ============================================================
 
-def build_graph(api_key: str, model_name: str = "gemini-1.5-pro", quality: str = "high") -> StateGraph:
+def build_graph(api_key: str, model_name: str = "gemini-2.0-flash", quality: str = "high") -> StateGraph:
     """Build and compile the LangGraph state machine."""
 
     graph = StateGraph(State)
@@ -546,7 +546,7 @@ def run_agent(
     prompt: str,
     api_key: str,
     output_path: str = "final_output.mp4",
-    model_name: str = "gemini-1.5-pro",
+    model_name: str = "gemini-2.0-flash",
     quality: str = "high",
 ) -> Generator[dict, None, None]:
     """
