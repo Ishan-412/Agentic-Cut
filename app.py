@@ -643,10 +643,7 @@ def render_pipeline_html(current_step: int, status: str = "running"):
 # SESSION INIT & HELPERS
 # ============================================================
 
-MODELS = {
-    "Gemini Flash": "gemini-3.5-flash",
-    "Gemini Pro": "gemini-1.5-pro",
-}
+# Models are now configured dynamically via text input.
 
 def init_session():
     defaults = {
@@ -662,7 +659,7 @@ def init_session():
         "running":           False,
         "error_message":     "",
         "video_meta":        {},
-        "model_name":        "gemini-3.5-flash",
+        "model_name":        "gemini-1.5-pro",
         "quality":           "high",
         "export_format":     "MP4",
         "trigger_run":       False,
@@ -847,8 +844,7 @@ def main():
             )
 
         st.markdown('<div class="ui-label" style="margin-top:1rem">Model Engine</div>', unsafe_allow_html=True)
-        selected_model = st.selectbox("Model", list(MODELS.keys()), label_visibility="collapsed")
-        st.session_state.model_name = MODELS[selected_model]
+        st.session_state.model_name = st.text_input("Model", value=st.session_state.model_name, label_visibility="collapsed")
 
         st.markdown("<hr>", unsafe_allow_html=True)
         
