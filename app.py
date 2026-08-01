@@ -5,6 +5,9 @@ UI Enriched with Quick Actions and Export Settings.
 """
 
 import os
+import traceback
+import google.generativeai as genai
+from dotenv import load_dotenv
 import time
 from datetime import datetime
 from pathlib import Path
@@ -844,7 +847,29 @@ def main():
             )
 
         st.markdown('<div class="ui-label" style="margin-top:1rem">Model Engine</div>', unsafe_allow_html=True)
-        st.session_state.model_name = st.text_input("Model", value=st.session_state.model_name, label_visibility="collapsed")
+        
+        available_models = []
+        if st.session_state.api_key:
+            try:
+                genai.configure(api_key=st.session_state.api_key)
+                for m in genai.list_models():
+                    if 'generateContent' in m.supported_generation_methods:
+                        available_models.append(m.name.replace('models/', ''))
+            except Exception:
+                pass
+                
+        if available_models:
+            # Try to select the default model if it exists in their allowed list
+            default_index = 0
+            if st.session_state.model_name in available_models:
+                default_index = available_models.index(st.session_state.model_name)
+            
+            st.session_state.model_name = st.selectbox("Available Models (Auto-detected)", available_models, index=default_index, label_visibility="collapsed")
+            st.markdown('<div style="font-size:0.65rem;color:var(--text-muted);margin-top:0.2rem;">Models loaded from your API key</div>', unsafe_allow_html=True)
+        else:
+            st.session_state.model_name = st.text_input("Model", value=st.session_state.model_name, label_visibility="collapsed")
+            if st.session_state.api_key:
+                st.markdown('<div style="font-size:0.65rem;color:var(--text-muted);margin-top:0.2rem;">Failed to fetch models. Type manually.</div>', unsafe_allow_html=True)
 
         st.markdown("<hr>", unsafe_allow_html=True)
         
