@@ -93,7 +93,7 @@ header { background: transparent !important; box-shadow: none !important; }
     /* Do NOT hide the toolbar — it contains stExpandSidebarButton */
 }
 
-/* Style & always show the sidebar expand/collapse buttons */
+/* Sidebar expand/collapse toggle — subtle dark button with neon accent */
 [data-testid="stExpandSidebarButton"],
 [data-testid="stSidebarCollapseButton"],
 [data-testid="collapsedControl"] {
@@ -101,22 +101,24 @@ header { background: transparent !important; box-shadow: none !important; }
     visibility: visible !important;
     opacity: 1 !important;
     z-index: 9999 !important;
-    background: var(--neon-yellow) !important;
-    border: none !important;
+    background: rgba(20,20,20,0.85) !important;
+    border: 1px solid rgba(229,255,0,0.35) !important;
     border-radius: 8px !important;
-    box-shadow: 0 0 16px rgba(229,255,0,0.5) !important;
-    transition: box-shadow 150ms ease, transform 150ms ease !important;
+    box-shadow: 0 0 8px rgba(229,255,0,0.15), inset 0 0 0 1px rgba(229,255,0,0.08) !important;
+    backdrop-filter: blur(8px) !important;
+    transition: border-color 200ms ease, box-shadow 200ms ease, transform 150ms ease !important;
 }
 [data-testid="stExpandSidebarButton"]:hover,
 [data-testid="stSidebarCollapseButton"]:hover,
 [data-testid="collapsedControl"]:hover {
-    box-shadow: 0 0 28px rgba(229,255,0,0.8) !important;
-    transform: scale(1.05) !important;
+    border-color: rgba(229,255,0,0.75) !important;
+    box-shadow: 0 0 20px rgba(229,255,0,0.35), inset 0 0 0 1px rgba(229,255,0,0.15) !important;
+    transform: scale(1.06) !important;
 }
 [data-testid="stExpandSidebarButton"] svg,
 [data-testid="stSidebarCollapseButton"] svg,
 [data-testid="collapsedControl"] svg {
-    fill: #000000 !important;
+    fill: rgba(229,255,0,0.85) !important;
 }
 
 /* === Typography === */
@@ -248,13 +250,14 @@ h1, h2, h3 {
     min-height: 44px !important;
     letter-spacing: 0.01em;
 }
-/* Secondary buttons: invert on hover (white bg, black text) */
+/* Secondary buttons: neon-yellow glow on hover */
 .stButton > button:hover {
-    background: #FFFFFF !important;
-    color: #000000 !important;
-    border-color: #FFFFFF !important;
-    transform: translateY(-1px) !important;
-    box-shadow: 0 4px 16px rgba(255,255,255,0.12) !important;
+    background: var(--surface-2) !important;
+    color: var(--neon-yellow) !important;
+    border-color: var(--neon-yellow) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 0 18px rgba(229,255,0,0.25), 0 4px 20px rgba(0,0,0,0.4) !important;
+    text-shadow: 0 0 8px rgba(229,255,0,0.5);
 }
 .stButton > button:active { transform: translateY(0) !important; }
 
@@ -663,85 +666,106 @@ def main():
     # ── ANIMATED CURSOR TRAIL ────────────────────────────────
     st.components.v1.html("""
 <style>
-/* Decorative trailing ring — sits BEHIND the real cursor */
+/* Neon dot — sits exactly at the cursor tip */
+#cursor-dot {
+    position: fixed;
+    pointer-events: none;
+    z-index: 999999;
+    border-radius: 50%;
+    width: 7px;
+    height: 7px;
+    background: #E5FF00;
+    box-shadow: 0 0 8px 3px rgba(229,255,0,0.8), 0 0 18px 6px rgba(229,255,0,0.3);
+    transform: translate(-50%, -50%);
+    transition: transform 0.08s ease, width 0.15s ease, height 0.15s ease;
+    will-change: left, top;
+}
+#cursor-dot.on-interactive {
+    width: 10px;
+    height: 10px;
+    background: #ffffff;
+    box-shadow: 0 0 12px 4px rgba(229,255,0,1), 0 0 30px 10px rgba(229,255,0,0.4);
+}
+/* Trailing ring — lags behind with glow */
 #cursor-aura {
     position: fixed;
     pointer-events: none;
     z-index: 999998;
     border-radius: 50%;
     transform: translate(-50%, -50%);
-    width: 36px;
-    height: 36px;
-    border: 1.5px solid rgba(229,255,0,0.35);
-    background: radial-gradient(circle, rgba(229,255,0,0.06) 0%, transparent 70%);
-    transition: width 0.25s ease, height 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+    width: 38px;
+    height: 38px;
+    border: 1.5px solid rgba(229,255,0,0.4);
+    background: radial-gradient(circle, rgba(229,255,0,0.07) 0%, transparent 70%);
+    transition: width 0.3s ease, height 0.3s ease, border-color 0.25s ease;
     will-change: left, top;
 }
 #cursor-aura.on-interactive {
-    width: 54px;
-    height: 54px;
-    border-color: rgba(229,255,0,0.65);
-    background: radial-gradient(circle, rgba(229,255,0,0.12) 0%, transparent 70%);
+    width: 58px;
+    height: 58px;
+    border-color: rgba(229,255,0,0.7);
+    background: radial-gradient(circle, rgba(229,255,0,0.13) 0%, transparent 70%);
+    box-shadow: 0 0 18px rgba(229,255,0,0.2);
 }
-/* Faint particle trail dots */
+/* Particle trail */
 .cursor-particle {
     position: fixed;
     pointer-events: none;
     z-index: 999997;
     border-radius: 50%;
-    width: 4px;
-    height: 4px;
-    background: rgba(229,255,0,0.6);
+    background: rgba(229,255,0,0.7);
     transform: translate(-50%, -50%);
-    animation: particle-fade 0.5s ease-out forwards;
+    animation: particle-fade 0.55s ease-out forwards;
 }
 @keyframes particle-fade {
-    0%   { opacity: 0.7; transform: translate(-50%,-50%) scale(1); }
-    100% { opacity: 0;   transform: translate(-50%,-50%) scale(0.1); }
+    0%   { opacity: 0.8; width: 5px; height: 5px; }
+    100% { opacity: 0;   width: 1px; height: 1px; }
 }
 </style>
+<div id="cursor-dot"></div>
 <div id="cursor-aura"></div>
 <script>
 (function() {
+    const dot  = document.getElementById('cursor-dot');
     const aura = document.getElementById('cursor-aura');
-    let mx = -200, my = -200;
-    let ax = -200, ay = -200;
-    let lastParticleTime = 0;
+    let mx = -300, my = -300;
+    let ax = -300, ay = -300;
+    let lastParticle = 0;
 
-    // Move aura smoothly behind the cursor
-    function animLoop() {
-        ax += (mx - ax) * 0.14;
-        ay += (my - ay) * 0.14;
+    // Dot tracks cursor instantly; aura lags behind
+    function loop() {
+        ax += (mx - ax) * 0.12;
+        ay += (my - ay) * 0.12;
         aura.style.left = ax + 'px';
         aura.style.top  = ay + 'px';
-        requestAnimationFrame(animLoop);
+        requestAnimationFrame(loop);
     }
-    animLoop();
+    loop();
 
-    window.addEventListener('mousemove', (e) => {
+    document.addEventListener('mousemove', (e) => {
         mx = e.clientX;
         my = e.clientY;
+        dot.style.left = mx + 'px';
+        dot.style.top  = my + 'px';
 
-        // Spawn particle trail
+        // Neon particle trail
         const now = Date.now();
-        if (now - lastParticleTime > 40) {
-            lastParticleTime = now;
+        if (now - lastParticle > 35) {
+            lastParticle = now;
             const p = document.createElement('div');
             p.className = 'cursor-particle';
-            p.style.left = mx + 'px';
-            p.style.top  = my + 'px';
+            const size = (Math.random() * 4 + 2) + 'px';
+            p.style.cssText = `left:${mx}px;top:${my}px;width:${size};height:${size};`;
             document.body.appendChild(p);
-            setTimeout(() => p.remove(), 500);
+            setTimeout(() => p.remove(), 560);
         }
     });
 
-    // Expand aura on interactive elements
-    window.addEventListener('mouseover', (e) => {
-        if (e.target.closest('button') || e.target.closest('a') || e.target.closest('input')) {
-            aura.classList.add('on-interactive');
-        } else {
-            aura.classList.remove('on-interactive');
-        }
+    // Grow both on interactive elements
+    document.addEventListener('mouseover', (e) => {
+        const isInteractive = e.target.closest('button') || e.target.closest('a') || e.target.closest('input');
+        dot.classList.toggle('on-interactive',  !!isInteractive);
+        aura.classList.toggle('on-interactive', !!isInteractive);
     });
 })();
 </script>
