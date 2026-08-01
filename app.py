@@ -795,9 +795,8 @@ def main():
             AGENTIC-CUT
         </div>
         <div class="nav-links">
-            <a href="https://github.com/Ishan-412/Agentic-Cut" target="_blank">Agents</a>
+            <a href="https://github.com/Ishan-412/Agentic-Cut/blob/main/agent.py" target="_blank">Agents</a>
             <a href="https://github.com/Ishan-412/Agentic-Cut/blob/main/README.md" target="_blank">Documentation</a>
-            <a href="https://github.com/Ishan-412/Agentic-Cut" target="_blank">GitHub</a>
             <a href="https://github.com/Ishan-412/Agentic-Cut/issues" target="_blank">Community</a>
         </div>
         <div style="display:flex; gap:1rem;">
