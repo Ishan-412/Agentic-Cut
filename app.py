@@ -853,8 +853,10 @@ def main():
             try:
                 genai.configure(api_key=st.session_state.api_key)
                 for m in genai.list_models():
-                    if 'generateContent' in m.supported_generation_methods:
-                        available_models.append(m.name.replace('models/', ''))
+                    name = m.name.replace('models/', '')
+                    # Filter out models known to throw 404 for new users
+                    if 'generateContent' in m.supported_generation_methods and name not in ['gemini-1.5-flash', 'gemini-2.5-flash']:
+                        available_models.append(name)
             except Exception:
                 pass
                 
