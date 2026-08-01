@@ -185,12 +185,22 @@ h1, h2, h3 {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    transition: border-color 150ms ease;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+    text-decoration: none;
+    cursor: pointer;
+}
+.pill:hover {
+    border-color: var(--text-primary);
+    box-shadow: 0 0 10px rgba(255,255,255,0.1);
 }
 .pill-solid {
     background: var(--pure-white);
     color: var(--pure-black);
     border-color: var(--pure-white);
+}
+.pill-solid:hover {
+    background: #e0e0e0;
+    border-color: #e0e0e0;
 }
 
 /* === Hero Section === */
@@ -429,11 +439,14 @@ button[data-testid="baseButton-primary"]:hover {
 .stButton > button:hover::before { left: 160%; }
 
 /* === Nav Links Hover Animation === */
-.nav-links span {
+.nav-links a {
     position: relative;
     transition: color 200ms ease;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
 }
-.nav-links span::after {
+.nav-links a::after {
     content: '';
     position: absolute;
     bottom: -3px; left: 0;
@@ -441,8 +454,8 @@ button[data-testid="baseButton-primary"]:hover {
     background: var(--neon-yellow);
     transition: width 250ms ease;
 }
-.nav-links span:hover { color: var(--text-primary) !important; }
-.nav-links span:hover::after { width: 100%; }
+.nav-links a:hover { color: var(--text-primary) !important; }
+.nav-links a:hover::after { width: 100%; }
 
 /* === Workspace Panel Glass Effect === */
 .workspace-panel {
@@ -789,12 +802,12 @@ def main():
             AGENTIC-CUT
         </div>
         <div class="nav-links">
-            <span>Agents</span>
-            <span>Documentation</span>
-            <span>Community</span>
+            <a href="https://github.com/Ishan-412/Agentic-Cut/blob/main/agent.py" target="_blank">Agents</a>
+            <a href="https://github.com/Ishan-412/Agentic-Cut/blob/main/README.md" target="_blank">Documentation</a>
+            <a href="https://github.com/Ishan-412/Agentic-Cut/issues" target="_blank">Community</a>
         </div>
         <div style="display:flex; gap:1rem;">
-            <div class="pill pill-solid">Feedback •</div>
+            <a href="https://github.com/Ishan-412/Agentic-Cut/issues/new" target="_blank" class="pill pill-solid">Feedback •</a>
         </div>
     </div>
     """, unsafe_allow_html=True)
