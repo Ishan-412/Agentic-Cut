@@ -84,22 +84,23 @@ html, body, [class*="css"] {
 /* Hide Streamlit chrome — but NOT stToolbar (it contains sidebar toggle) */
 #MainMenu, footer { display: none !important; }
 header { background: transparent !important; box-shadow: none !important; }
-[data-testid="stHeader"] { background: transparent !important; }
+[data-testid="stHeader"] { 
+    background: transparent !important; 
+    height: 72px !important;
+    top: 0;
+    right: 48px; /* matching padding of top-nav */
+    width: auto !important;
+    z-index: 1000 !important;
+}
 
 /* Hide toolbar decoration but keep the sidebar expand button visible */
 [data-testid="stToolbar"] {
     background: transparent !important;
     box-shadow: none !important;
+    gap: 16px !important;
+    height: 72px !important;
+    align-items: center !important;
     /* Do NOT hide the toolbar — it contains stExpandSidebarButton */
-}
-/* Hide the Streamlit GitHub badge in the top right */
-.viewerBadge_container__1QSob,
-.viewerBadge_link__1S137,
-.styles_viewerBadge__1yB5_,
-[data-testid="stGitHubBadge"],
-[data-testid="stAppDeployButton"],
-header a[href*="github.com"] {
-    display: none !important;
 }
 
 /* Sidebar expand/collapse toggle — subtle dark button with neon accent */
@@ -141,14 +142,35 @@ h1, h2, h3 {
 
 /* === Top Nav === */
 .top-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 72px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 0 0 1.25rem 0;
-    margin-top: -3.2rem;
-    padding-right: 140px; /* prevent overlap with Streamlit toolbar */
-    border-bottom: 1px solid var(--border-soft);
-    margin-bottom: 0;
+    justify-content: space-between;
+    padding: 0 48px;
+    background: var(--pure-black);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    z-index: 998;
+}
+.navbar-left {
+    display: flex;
+    align-items: center;
+}
+.navbar-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+.navbar-right {
+    display: flex;
+    align-items: center;
+    padding-right: 170px; /* Leave space for native Streamlit icons */
 }
 .nav-brand {
     font-family: var(--font-display);
@@ -363,7 +385,7 @@ button[data-testid="baseButton-primary"]:hover {
 }
 
 /* Block container */
-.block-container { padding-top: 2.5rem !important; padding-bottom: 3rem !important; }
+.block-container { padding-top: 88px !important; padding-bottom: 3rem !important; }
 
 /* ====================================================
    FINAL POLISH ADDITIONS
@@ -431,11 +453,14 @@ button[data-testid="baseButton-primary"]:hover {
 .stButton > button:hover::before { left: 160%; }
 
 /* === Nav Links Hover Animation === */
-.nav-links span {
+.navbar-center span {
     position: relative;
     transition: color 200ms ease;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
 }
-.nav-links span::after {
+.navbar-center span::after {
     content: '';
     position: absolute;
     bottom: -3px; left: 0;
@@ -443,8 +468,8 @@ button[data-testid="baseButton-primary"]:hover {
     background: var(--neon-yellow);
     transition: width 250ms ease;
 }
-.nav-links span:hover { color: var(--text-primary) !important; }
-.nav-links span:hover::after { width: 100%; }
+.navbar-center span:hover { color: var(--text-primary) !important; }
+.navbar-center span:hover::after { width: 100%; }
 
 /* === Workspace Panel Glass Effect === */
 .workspace-panel {
@@ -786,16 +811,18 @@ def main():
     # ── TOP NAVIGATION ───────────────────────────────────────
     st.markdown("""
     <div class="top-nav">
-        <div class="nav-brand" style="font-size: 2.5rem; letter-spacing: -0.05em; gap: 0.75rem;">
-            <div class="brand-mark" style="width: 28px; height: 28px; border-radius: 6px;"></div>
-            AGENTIC-CUT
+        <div class="navbar-left">
+            <div class="nav-brand" style="font-size: 1.6rem; letter-spacing: -0.05em; gap: 0.65rem;">
+                <div class="brand-mark" style="width: 22px; height: 22px; border-radius: 4px;"></div>
+                AGENTIC-CUT
+            </div>
         </div>
-        <div class="nav-links">
+        <div class="navbar-center">
             <span>Agents</span>
             <span>Documentation</span>
             <span>Community</span>
         </div>
-        <div style="display:flex; gap:1rem;">
+        <div class="navbar-right">
             <div class="pill pill-solid">Feedback •</div>
         </div>
     </div>
