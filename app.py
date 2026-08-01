@@ -866,7 +866,8 @@ def main():
         uploaded = st.file_uploader("Upload", type=["mp4", "mov", "avi"], label_visibility="collapsed")
         
         if uploaded is not None:
-            if st.session_state.get("uploaded_filename") != uploaded.name:
+            upload_key = f"{uploaded.name}_{uploaded.size}"
+            if st.session_state.get("upload_key") != upload_key:
                 suffix = Path(uploaded.name).suffix
                 workspace = Path(__file__).parent / "workspace"
                 upload_dir = workspace / "uploads"
@@ -874,11 +875,19 @@ def main():
                 upload_dir.mkdir(parents=True, exist_ok=True)
                 output_dir.mkdir(parents=True, exist_ok=True)
 
-                upload_path = upload_dir / f"input{suffix}"
+                # Clear old uploads to avoid taking up disk space and to prevent caching bugs
+                for f in upload_dir.glob("*"):
+                    try:
+                        f.unlink()
+                    except Exception:
+                        pass
+
+                upload_path = upload_dir / f"input_{int(time.time())}{suffix}"
                 upload_path.write_bytes(uploaded.read())
 
                 st.session_state.video_path = str(upload_path)
                 st.session_state.uploaded_filename = uploaded.name
+                st.session_state.upload_key = upload_key
                 st.session_state.output_path = str(output_dir / f"output.{st.session_state.export_format.lower()}")
                 
                 if Path(st.session_state.output_path).exists():
