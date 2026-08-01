@@ -92,6 +92,13 @@ header { background: transparent !important; box-shadow: none !important; }
     box-shadow: none !important;
     /* Do NOT hide the toolbar — it contains stExpandSidebarButton */
 }
+/* Hide the Streamlit GitHub badge in the top right */
+.viewerBadge_container__1QSob,
+.viewerBadge_link__1S137,
+.styles_viewerBadge__1yB5_,
+[data-testid="stGitHubBadge"] {
+    display: none !important;
+}
 
 /* Sidebar expand/collapse toggle — subtle dark button with neon accent */
 [data-testid="stExpandSidebarButton"],
@@ -135,7 +142,9 @@ h1, h2, h3 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.25rem 0 1.5rem 0;
+    padding: 0 0 1.5rem 0;
+    margin-top: -2.5rem;
+    padding-right: 130px; /* prevent overlap with Streamlit toolbar */
     border-bottom: 1px solid var(--border-soft);
     margin-bottom: 0;
 }
@@ -352,7 +361,7 @@ button[data-testid="baseButton-primary"]:hover {
 }
 
 /* Block container */
-.block-container { padding-top: 1.5rem !important; padding-bottom: 3rem !important; }
+.block-container { padding-top: 2.5rem !important; padding-bottom: 3rem !important; }
 
 /* ====================================================
    FINAL POLISH ADDITIONS
@@ -782,12 +791,10 @@ def main():
         <div class="nav-links">
             <span>Agents</span>
             <span>Documentation</span>
-            <span>GitHub</span>
             <span>Community</span>
         </div>
         <div style="display:flex; gap:1rem;">
-            <div class="pill">Feedback •</div>
-            <div class="pill" style="background:var(--pure-white); color:var(--pure-black);">Deploy •</div>
+            <div class="pill pill-solid">Feedback •</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
