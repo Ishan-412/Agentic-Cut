@@ -96,7 +96,9 @@ header { background: transparent !important; box-shadow: none !important; }
 .viewerBadge_container__1QSob,
 .viewerBadge_link__1S137,
 .styles_viewerBadge__1yB5_,
-[data-testid="stGitHubBadge"] {
+[data-testid="stGitHubBadge"],
+[data-testid="stAppDeployButton"],
+header a[href*="github.com"] {
     display: none !important;
 }
 
@@ -142,9 +144,9 @@ h1, h2, h3 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 0 1.5rem 0;
-    margin-top: -2.5rem;
-    padding-right: 130px; /* prevent overlap with Streamlit toolbar */
+    padding: 0 0 1.25rem 0;
+    margin-top: -3.2rem;
+    padding-right: 140px; /* prevent overlap with Streamlit toolbar */
     border-bottom: 1px solid var(--border-soft);
     margin-bottom: 0;
 }
