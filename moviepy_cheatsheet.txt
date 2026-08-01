@@ -17,7 +17,7 @@ from moviepy import (
 
 ## 2. LOAD & INSPECT A VIDEO
 ```python
-clip = VideoFileClip(video_path)
+clip = VideoFileClip("input.mp4")
 duration      = clip.duration        # float, seconds
 fps           = clip.fps             # float
 width, height = clip.size            # (int, int)

@@ -646,10 +646,6 @@ def render_pipeline_html(current_step: int, status: str = "running"):
 MODELS = {
     "Gemini Flash": "gemini-flash-latest",
     "Gemini Pro": "gemini-pro-latest",
-    "OpenAI GPT-4o": "gpt-4o",
-    "OpenAI GPT-4o-mini": "gpt-4o-mini",
-    "Groq Llama 3 70B": "llama3-70b-8192",
-    "Groq Mixtral": "mixtral-8x7b-32768",
 }
 
 def init_session():
@@ -825,30 +821,18 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         
-        st.markdown('<div class="ui-label" style="margin-top:1rem">Model Engine</div>', unsafe_allow_html=True)
-        selected_model = st.selectbox("Model", list(MODELS.keys()), label_visibility="collapsed")
-        st.session_state.model_name = MODELS[selected_model]
-
-        provider = "Gemini"
-        link = "https://aistudio.google.com/app/apikey"
-        if "OpenAI" in selected_model:
-            provider = "OpenAI"
-            link = "https://platform.openai.com/api-keys"
-        elif "Groq" in selected_model:
-            provider = "Groq"
-            link = "https://console.groq.com/keys"
-
-        st.markdown(f'<div class="ui-label" style="margin-top:1rem">{provider} API Key</div>', unsafe_allow_html=True)
+        st.markdown('<div class="ui-label">Gemini API Key</div>', unsafe_allow_html=True)
         api_key_val = st.text_input(
             "API Key", value=st.session_state.api_key,
-            placeholder=f"Paste your {provider} API key...",
+            placeholder="Paste your Gemini API key...",
             type="password", label_visibility="collapsed",
         )
         if api_key_val:
             st.session_state.api_key = api_key_val
         st.markdown(
-            f'<div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-muted);margin-top:0.4rem;">'
-            f'Get a key at <a href="{link}" target="_blank" style="color:var(--neon-yellow);text-decoration:none;">{provider}</a>'
+            '<div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-muted);margin-top:0.4rem;">'
+            'Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" '
+            'style="color:var(--neon-yellow);text-decoration:none;">aistudio.google.com</a>'
             '</div>',
             unsafe_allow_html=True
         )
@@ -857,10 +841,14 @@ def main():
                 '<div style="background:rgba(229,255,0,0.06);border:1px solid rgba(229,255,0,0.2);'
                 'border-radius:8px;padding:0.6rem 0.8rem;margin-top:0.75rem;'
                 'font-family:var(--font-mono);font-size:0.72rem;color:rgba(229,255,0,0.8);">'
-                f'⚠ Enter your {provider} key above to run edits'
+                '⚠ Enter your API key above to run edits'
                 '</div>',
                 unsafe_allow_html=True
             )
+
+        st.markdown('<div class="ui-label" style="margin-top:1rem">Model Engine</div>', unsafe_allow_html=True)
+        selected_model = st.selectbox("Model", list(MODELS.keys()), label_visibility="collapsed")
+        st.session_state.model_name = MODELS[selected_model]
 
         st.markdown("<hr>", unsafe_allow_html=True)
         
@@ -878,8 +866,7 @@ def main():
         uploaded = st.file_uploader("Upload", type=["mp4", "mov", "avi"], label_visibility="collapsed")
         
         if uploaded is not None:
-            upload_key = getattr(uploaded, "file_id", f"{uploaded.name}_{uploaded.size}")
-            if st.session_state.get("upload_key") != upload_key:
+            if st.session_state.get("uploaded_filename") != uploaded.name:
                 suffix = Path(uploaded.name).suffix
                 workspace = Path(__file__).parent / "workspace"
                 upload_dir = workspace / "uploads"
@@ -887,19 +874,11 @@ def main():
                 upload_dir.mkdir(parents=True, exist_ok=True)
                 output_dir.mkdir(parents=True, exist_ok=True)
 
-                # Clear old uploads to avoid taking up disk space and to prevent caching bugs
-                for f in upload_dir.glob("*"):
-                    try:
-                        f.unlink()
-                    except Exception:
-                        pass
-
-                upload_path = upload_dir / f"input_{int(time.time())}{suffix}"
+                upload_path = upload_dir / f"input{suffix}"
                 upload_path.write_bytes(uploaded.read())
 
                 st.session_state.video_path = str(upload_path)
                 st.session_state.uploaded_filename = uploaded.name
-                st.session_state.upload_key = upload_key
                 st.session_state.output_path = str(output_dir / f"output.{st.session_state.export_format.lower()}")
                 
                 if Path(st.session_state.output_path).exists():
@@ -920,6 +899,10 @@ def main():
             <div class="mono-text hero-sub">Upload a video in the sidebar to begin editing.</div>
         </div>
         """, unsafe_allow_html=True)
+    else:
+        # Update output path suffix dynamically in case export format changed
+        out_dir = Path(st.session_state.video_path).parent.parent / "outputs"
+        st.session_state.output_path = str(out_dir / f"output.{st.session_state.export_format.lower()}")
 
     # ── PIPELINE & CONTROLS (ALWAYS VISIBLE) ─────────────────
     
@@ -1059,21 +1042,16 @@ def main():
             st.error("Enter an instruction.")
             st.stop()
 
-        out_dir = Path(st.session_state.video_path).parent.parent / "outputs"
-        out_dir.mkdir(parents=True, exist_ok=True)
-        for f in out_dir.glob("*"):
-            try:
-                f.unlink()
-            except Exception:
-                pass
-        st.session_state.output_path = str(out_dir / f"output_{int(time.time())}.{st.session_state.export_format.lower()}")
-
         st.session_state.running = True
         st.session_state.render_status = "Pending"
         st.session_state.edit_plan = ""
         st.session_state.generated_code = ""
         st.session_state.logs = []
         st.session_state.error_message = ""
+        
+        if st.session_state.output_path and Path(st.session_state.output_path).exists():
+            Path(st.session_state.output_path).unlink(missing_ok=True)
+            
         st.rerun()
 
     if st.session_state.running:

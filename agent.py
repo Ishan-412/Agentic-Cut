@@ -26,8 +26,6 @@ except ImportError:
 # ---------------------------------------------------------------------------
 from langgraph.graph import StateGraph, END
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_openai import ChatOpenAI
-from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
 
 # ---------------------------------------------------------------------------
@@ -239,25 +237,12 @@ def _extract_text(content) -> str:
     return str(content)
 
 
-def _get_llm(api_key: str, model_name: str = "gemini-flash-latest"):
-    if model_name.startswith("gpt"):
-        return ChatOpenAI(
-            model=model_name,
-            api_key=api_key,
-            temperature=0.1,
-        )
-    elif model_name.startswith("llama") or model_name.startswith("mixtral"):
-        return ChatGroq(
-            model=model_name,
-            api_key=api_key,
-            temperature=0.1,
-        )
-    else:
-        return ChatGoogleGenerativeAI(
-            model=model_name,
-            google_api_key=api_key,
-            temperature=0.1,
-        )
+def _get_llm(api_key: str, model_name: str = "gemini-flash-latest") -> ChatGoogleGenerativeAI:
+    return ChatGoogleGenerativeAI(
+        model=model_name,
+        google_api_key=api_key,
+        temperature=0.1,
+    )
 
 
 # ============================================================
