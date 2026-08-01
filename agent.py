@@ -244,6 +244,20 @@ def _get_llm(api_key: str, model_name: str = "gemini-1.5-pro") -> ChatGoogleGene
         temperature=0.1,
     )
 
+def _safe_invoke(api_key: str, model_name: str, messages: list):
+    try:
+        llm = _get_llm(api_key, model_name)
+        return llm.invoke(messages)
+    except Exception as e:
+        error_msg = str(e)
+        if "403" in error_msg or "404" in error_msg or "PERMISSION_DENIED" in error_msg or "NOT_FOUND" in error_msg:
+            fallback_model = "gemini-1.5-pro"
+            if model_name != fallback_model:
+                print(f"Model {model_name} failed with {error_msg}. Falling back to {fallback_model}.")
+                llm = _get_llm(api_key, fallback_model)
+                return llm.invoke(messages)
+        raise e
+
 
 # ============================================================
 # 5. NODE: PLANNER AGENT
@@ -287,11 +301,14 @@ Video Metadata:
 
 Please create a step-by-step editing plan."""
 
-    llm = _get_llm(api_key, state.get("model_name", "gemini-1.5-pro"))
-    response = llm.invoke([
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=human_message),
-    ])
+    response = _safe_invoke(
+        api_key,
+        state.get("model_name", "gemini-1.5-pro"),
+        [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=human_message),
+        ]
+    )
 
     edit_plan = _extract_text(response.content)
     logs.append("✅ [Planner] Edit plan generated successfully.")
@@ -373,11 +390,14 @@ Do NOT repeat the same mistake. Output only the corrected Python code.
 {error_section}
 Write the complete Python script now."""
 
-    llm = _get_llm(api_key, state.get("model_name", "gemini-1.5-pro"))
-    response = llm.invoke([
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=human_message),
-    ])
+    response = _safe_invoke(
+        api_key,
+        state.get("model_name", "gemini-1.5-pro"),
+        [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=human_message),
+        ]
+    )
 
     raw_code = _extract_text(response.content)
 
