@@ -26,6 +26,10 @@ except ImportError:
 # ---------------------------------------------------------------------------
 from langgraph.graph import StateGraph, END
 from langchain_google_genai import ChatGoogleGenerativeAI
+try:
+    from langchain_groq import ChatGroq
+except ImportError:
+    ChatGroq = None
 from langchain_core.messages import SystemMessage, HumanMessage
 
 # ---------------------------------------------------------------------------
@@ -55,7 +59,8 @@ class State(TypedDict):
     user_prompt: str
     video_path: str
     output_path: str
-    model_name: str         # Gemini model to use
+    model_name: str         # Model to use (e.g. llama-3.3-70b-versatile or gemini-2.0-flash)
+    provider: str           # 'groq' | 'gemini'
     quality: str            # 'high' | 'medium' | 'fast'
     edit_plan: str
     generated_code: str
@@ -237,24 +242,50 @@ def _extract_text(content) -> str:
     return str(content)
 
 
-def _get_llm(api_key: str, model_name: str = "gemini-1.5-pro") -> ChatGoogleGenerativeAI:
-    return ChatGoogleGenerativeAI(
-        model=model_name,
-        google_api_key=api_key,
-        temperature=0.1,
+def _get_llm(api_key: str, model_name: str = "llama-3.3-70b-versatile", provider: str = "groq"):
+    provider_lower = (provider or "groq").lower()
+    # Check if this should be routed to Groq
+    is_groq = (
+        provider_lower == "groq"
+        or "llama" in model_name.lower()
+        or "mixtral" in model_name.lower()
+        or "deepseek" in model_name.lower()
+        or "gsk_" in api_key
     )
+    if is_groq:
+        if ChatGroq is None:
+            raise ImportError("langchain-groq is not installed. Please run `pip install langchain-groq groq`.")
+        return ChatGroq(
+            model_name=model_name,
+            groq_api_key=api_key,
+            temperature=0.1,
+        )
+    else:
+        return ChatGoogleGenerativeAI(
+            model=model_name,
+            google_api_key=api_key,
+            temperature=0.1,
+        )
 
-def _safe_invoke(api_key: str, model_name: str, messages: list):
+
+def _safe_invoke(api_key: str, model_name: str, messages: list, provider: str = "groq"):
     try:
-        llm = _get_llm(api_key, model_name)
+        llm = _get_llm(api_key, model_name, provider=provider)
         return llm.invoke(messages)
     except Exception as e:
         error_msg = str(e)
-        if "403" in error_msg or "404" in error_msg or "PERMISSION_DENIED" in error_msg or "NOT_FOUND" in error_msg:
+        provider_lower = (provider or "groq").lower()
+        if provider_lower == "gemini" and ("403" in error_msg or "404" in error_msg or "PERMISSION_DENIED" in error_msg or "NOT_FOUND" in error_msg):
             fallback_model = "gemini-2.0-flash"
             if model_name != fallback_model:
                 print(f"Model {model_name} failed with {error_msg}. Falling back to {fallback_model}.")
-                llm = _get_llm(api_key, fallback_model)
+                llm = _get_llm(api_key, fallback_model, provider="gemini")
+                return llm.invoke(messages)
+        elif provider_lower == "groq" and ("rate limit" in error_msg.lower() or "429" in error_msg or "not found" in error_msg.lower()):
+            fallback_model = "llama-3.3-70b-versatile"
+            if model_name != fallback_model:
+                print(f"Model {model_name} failed with {error_msg}. Falling back to {fallback_model}.")
+                llm = _get_llm(api_key, fallback_model, provider="groq")
                 return llm.invoke(messages)
         raise e
 
@@ -303,11 +334,12 @@ Please create a step-by-step editing plan."""
 
     response = _safe_invoke(
         api_key,
-        state.get("model_name", "gemini-2.0-flash"),
+        state.get("model_name", "llama-3.3-70b-versatile"),
         [
             SystemMessage(content=system_prompt),
             HumanMessage(content=human_message),
-        ]
+        ],
+        provider=state.get("provider", "groq"),
     )
 
     edit_plan = _extract_text(response.content)
@@ -392,11 +424,12 @@ Write the complete Python script now."""
 
     response = _safe_invoke(
         api_key,
-        state.get("model_name", "gemini-2.0-flash"),
+        state.get("model_name", "llama-3.3-70b-versatile"),
         [
             SystemMessage(content=system_prompt),
             HumanMessage(content=human_message),
-        ]
+        ],
+        provider=state.get("provider", "groq"),
     )
 
     raw_code = _extract_text(response.content)
@@ -507,7 +540,12 @@ def router_edge(state: State) -> str:
 # 9. GRAPH ASSEMBLY
 # ============================================================
 
-def build_graph(api_key: str, model_name: str = "gemini-2.0-flash", quality: str = "high") -> StateGraph:
+def build_graph(
+    api_key: str,
+    model_name: str = "llama-3.3-70b-versatile",
+    provider: str = "groq",
+    quality: str = "high",
+) -> StateGraph:
     """Build and compile the LangGraph state machine."""
 
     graph = StateGraph(State)
@@ -546,20 +584,22 @@ def run_agent(
     prompt: str,
     api_key: str,
     output_path: str = "final_output.mp4",
-    model_name: str = "gemini-2.0-flash",
+    model_name: str = "llama-3.3-70b-versatile",
+    provider: str = "groq",
     quality: str = "high",
 ) -> Generator[dict, None, None]:
     """
     Run the full agentic pipeline and yield intermediate state dicts
     after each node completes, for live Streamlit display.
     """
-    compiled = build_graph(api_key, model_name, quality)
+    compiled = build_graph(api_key, model_name, provider, quality)
 
     initial_state: State = {
         "user_prompt": prompt,
         "video_path": video_path,
         "output_path": output_path,
         "model_name": model_name,
+        "provider": provider,
         "quality": quality,
         "edit_plan": "",
         "generated_code": "",

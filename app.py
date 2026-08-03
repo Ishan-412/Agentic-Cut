@@ -650,6 +650,7 @@ def render_pipeline_html(current_step: int, status: str = "running"):
 
 def init_session():
     defaults = {
+        "provider":          "groq",
         "api_key":           "",  # Users enter their own key
         "video_path":        None,
         "output_path":       None,
@@ -662,7 +663,7 @@ def init_session():
         "running":           False,
         "error_message":     "",
         "video_meta":        {},
-        "model_name":        "gemini-2.0-flash",
+        "model_name":        "llama-3.3-70b-versatile",
         "quality":           "high",
         "export_format":     "MP4",
         "trigger_run":       False,
@@ -821,21 +822,52 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         
-        st.markdown('<div class="ui-label">Gemini API Key</div>', unsafe_allow_html=True)
-        api_key_val = st.text_input(
-            "API Key", value=st.session_state.api_key,
-            placeholder="Paste your Gemini API key...",
-            type="password", label_visibility="collapsed",
+        st.markdown('<div class="ui-label">AI Engine Provider</div>', unsafe_allow_html=True)
+        provider_options = ["Groq (Recommended - Free & Fast)", "Google Gemini"]
+        current_idx = 0 if st.session_state.provider == "groq" else 1
+        selected_provider = st.selectbox(
+            "Provider", provider_options, index=current_idx, label_visibility="collapsed"
         )
-        if api_key_val:
-            st.session_state.api_key = api_key_val
-        st.markdown(
-            '<div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-muted);margin-top:0.4rem;">'
-            'Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" '
-            'style="color:var(--neon-yellow);text-decoration:none;">aistudio.google.com</a>'
-            '</div>',
-            unsafe_allow_html=True
-        )
+        new_provider = "groq" if "Groq" in selected_provider else "gemini"
+        if new_provider != st.session_state.provider:
+            st.session_state.provider = new_provider
+            st.session_state.api_key = ""
+            st.session_state.model_name = "llama-3.3-70b-versatile" if new_provider == "groq" else "gemini-2.0-flash"
+            st.rerun()
+
+        if st.session_state.provider == "groq":
+            st.markdown('<div class="ui-label" style="margin-top:0.8rem;">Groq API Key</div>', unsafe_allow_html=True)
+            api_key_val = st.text_input(
+                "API Key", value=st.session_state.api_key,
+                placeholder="gsk_...",
+                type="password", label_visibility="collapsed",
+            )
+            if api_key_val:
+                st.session_state.api_key = api_key_val
+            st.markdown(
+                '<div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-muted);margin-top:0.4rem;">'
+                'Get a free instant key at <a href="https://console.groq.com/keys" target="_blank" '
+                'style="color:var(--neon-yellow);text-decoration:none;">console.groq.com/keys</a>'
+                '</div>',
+                unsafe_allow_html=True
+            )
+        else:
+            st.markdown('<div class="ui-label" style="margin-top:0.8rem;">Gemini API Key</div>', unsafe_allow_html=True)
+            api_key_val = st.text_input(
+                "API Key", value=st.session_state.api_key,
+                placeholder="Paste your Gemini API key...",
+                type="password", label_visibility="collapsed",
+            )
+            if api_key_val:
+                st.session_state.api_key = api_key_val
+            st.markdown(
+                '<div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-muted);margin-top:0.4rem;">'
+                'Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" '
+                'style="color:var(--neon-yellow);text-decoration:none;">aistudio.google.com</a>'
+                '</div>',
+                unsafe_allow_html=True
+            )
+
         if not st.session_state.api_key:
             st.markdown(
                 '<div style="background:rgba(229,255,0,0.06);border:1px solid rgba(229,255,0,0.2);'
@@ -848,30 +880,39 @@ def main():
 
         st.markdown('<div class="ui-label" style="margin-top:1rem">Model Engine</div>', unsafe_allow_html=True)
         
-        available_models = []
-        if st.session_state.api_key:
-            try:
-                genai.configure(api_key=st.session_state.api_key)
-                for m in genai.list_models():
-                    name = m.name.replace('models/', '')
-                    # Filter out models known to throw 404 for new users
-                    if 'generateContent' in m.supported_generation_methods and name not in ['gemini-1.5-flash', 'gemini-2.5-flash']:
-                        available_models.append(name)
-            except Exception:
-                pass
-                
-        if available_models:
-            # Try to select the default model if it exists in their allowed list
-            default_index = 0
-            if st.session_state.model_name in available_models:
-                default_index = available_models.index(st.session_state.model_name)
-            
-            st.session_state.model_name = st.selectbox("Available Models (Auto-detected)", available_models, index=default_index, label_visibility="collapsed")
-            st.markdown('<div style="font-size:0.65rem;color:var(--text-muted);margin-top:0.2rem;">Models loaded from your API key</div>', unsafe_allow_html=True)
+        if st.session_state.provider == "groq":
+            groq_models = [
+                "llama-3.3-70b-versatile",
+                "llama-3.1-8b-instant",
+                "mixtral-8x7b-32768",
+                "deepseek-r1-distill-llama-70b",
+            ]
+            idx = 0
+            if st.session_state.model_name in groq_models:
+                idx = groq_models.index(st.session_state.model_name)
+            st.session_state.model_name = st.selectbox("Model", groq_models, index=idx, label_visibility="collapsed")
+            st.markdown('<div style="font-size:0.65rem;color:var(--text-muted);margin-top:0.2rem;">Ultra-fast open-weight LLM on Groq LPU</div>', unsafe_allow_html=True)
         else:
-            st.session_state.model_name = st.text_input("Model", value=st.session_state.model_name, label_visibility="collapsed")
+            available_models = []
             if st.session_state.api_key:
-                st.markdown('<div style="font-size:0.65rem;color:var(--text-muted);margin-top:0.2rem;">Failed to fetch models. Type manually.</div>', unsafe_allow_html=True)
+                try:
+                    genai.configure(api_key=st.session_state.api_key)
+                    for m in genai.list_models():
+                        name = m.name.replace('models/', '')
+                        if 'generateContent' in m.supported_generation_methods and name not in ['gemini-1.5-flash', 'gemini-2.5-flash']:
+                            available_models.append(name)
+                except Exception:
+                    pass
+                    
+            if available_models:
+                default_index = 0
+                if st.session_state.model_name in available_models:
+                    default_index = available_models.index(st.session_state.model_name)
+                
+                st.session_state.model_name = st.selectbox("Available Models (Auto-detected)", available_models, index=default_index, label_visibility="collapsed")
+                st.markdown('<div style="font-size:0.65rem;color:var(--text-muted);margin-top:0.2rem;">Models loaded from your API key</div>', unsafe_allow_html=True)
+            else:
+                st.session_state.model_name = st.selectbox("Model", ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash"], index=0, label_visibility="collapsed")
 
         st.markdown("<hr>", unsafe_allow_html=True)
         
@@ -1094,6 +1135,7 @@ def main():
                 api_key=st.session_state.api_key,
                 output_path=st.session_state.output_path,
                 model_name=st.session_state.model_name,
+                provider=st.session_state.provider,
                 quality=st.session_state.quality,
             ):
                 node_name  = update["node"]
