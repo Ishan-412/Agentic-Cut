@@ -472,17 +472,19 @@ def plan_node(state: State, api_key: str) -> State:
         f"Size: {meta.get('size_mb')} MB"
     )
 
-    system_prompt = """You are an expert video editing planner. Your job is to convert a user's
-natural-language video editing request into a structured, numbered step-by-step execution plan.
+    system_prompt = f"""You are an expert video editing planner. Your job is to convert ANY user video editing request (whether simple, vague, creative, technical, or multi-step) into a structured, numbered step-by-step MoviePy execution plan.
 
-Be specific and technical. Each step should reference exact MoviePy operations.
-Format your plan clearly in Markdown with numbered steps.
-
-Rules:
-- Keep the plan concise (3-8 steps maximum).
-- Do NOT write any Python code — only describe the steps.
-- Reference exact parameter values where known (e.g., "trim from 0s to 5s", "speed 1.5x").
-- Always end with a step: "Write the final output to `output_path`."
+GUIDELINES FOR ALL PROMPTS:
+1. VAGUE / CREATIVE PROMPTS (e.g. "make it cool", "cinematic", "make it a reel", "enhance it", "clean edit"):
+   - Translate into concrete high-impact edits: e.g. crop to 9:16 vertical if suitable, subtle contrast enhancement, smooth 0.5s fade-in/fade-out, and audio normalization.
+2. TIMESTAMPS & BOUNDS:
+   - The video duration is {meta.get('duration')} seconds. All cut or trim timestamps MUST be strictly within [0.0, {meta.get('duration')}].
+   - If user asks for an out-of-range timestamp, clamp it to {meta.get('duration')}.
+3. ORDER OF OPERATIONS:
+   - Order steps logically: Load video -> Trimming/Cuts -> Speed changes -> Crops/Resizes/Rotations -> Visual Filters/Effects -> Overlays/Banners -> Audio changes -> Export.
+4. Keep the plan concise (3-8 steps maximum).
+5. Do NOT write Python code — only describe the clear actions and MoviePy operations.
+6. Always end with: "Write the final output to `output_path` and close clips."
 """
 
     human_message = f"""User Request: {state['user_prompt']}
@@ -597,18 +599,31 @@ Write the complete Python script now."""
         provider=state.get("provider", "groq"),
     )
 
-    raw_code = _extract_text(response.content)
+    raw_response = _extract_text(response.content)
 
-    # Strip any accidental markdown fences the model may have added
-    raw_code = re.sub(r"^```(?:python)?\n?", "", raw_code.strip())
-    raw_code = re.sub(r"\n?```$", "", raw_code.strip())
+    # Robust code extraction (handles markdown blocks, preambles, fences)
+    text = raw_response.strip()
+    match = re.search(r"```(?:python)?\s*(.*?)\s*```", text, re.DOTALL)
+    if match:
+        clean_code = match.group(1).strip()
+    else:
+        clean_code = re.sub(r"^```(?:python)?\n?", "", text)
+        clean_code = re.sub(r"\n?```$", "", clean_code).strip()
+
+    # Filter any non-code explanation lines that leaked
+    filtered_lines = []
+    for line in clean_code.splitlines():
+        if line.strip().startswith(("Here is ", "Note: ", "Explanation: ", "Below is ")):
+            continue
+        filtered_lines.append(line)
+    clean_code = "\n".join(filtered_lines).strip()
 
     logs.append("✅ [Coder] Code generation complete.")
-    logs.append(f"📝 [Coder] Generated {len(raw_code.splitlines())} lines of code.")
+    logs.append(f"📝 [Coder] Generated {len(clean_code.splitlines())} lines of code.")
 
     return {
         **state,
-        "generated_code": raw_code,
+        "generated_code": clean_code,
         "logs": logs,
     }
 
@@ -659,6 +674,11 @@ def execute_node(state: State) -> State:
     try:
         import moviepy.video.fx as vfx
         exec_namespace["vfx"] = vfx
+    except ImportError:
+        pass
+    try:
+        import moviepy.audio.fx as afx
+        exec_namespace["afx"] = afx
     except ImportError:
         pass
 
