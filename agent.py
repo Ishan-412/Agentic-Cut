@@ -86,6 +86,48 @@ def _apply_moviepy_compatibility_shims():
                 except Exception:
                     return self
             Clip.fx = _fx
+
+        # Patch CompositeVideoClip to ensure duration is never None if any subclip has duration
+        try:
+            from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip as OrigComposite
+            _orig_composite_init = OrigComposite.__init__
+
+            def _patched_composite_init(self, clips, *args, **kwargs):
+                _orig_composite_init(self, clips, *args, **kwargs)
+                if getattr(self, "duration", None) is None and clips:
+                    valid_durations = [c.duration for c in clips if getattr(c, "duration", None) is not None]
+                    if valid_durations:
+                        max_d = max(valid_durations)
+                        self.duration = max_d
+                        self.end = max_d
+                        for c in getattr(self, "clips", []):
+                            if getattr(c, "duration", None) is None:
+                                c.duration = max_d
+                                c.end = max_d
+
+            OrigComposite.__init__ = _patched_composite_init
+        except Exception:
+            pass
+
+        # Patch requires_duration decorator to auto-recover duration from reader/audio if available
+        try:
+            import moviepy.decorators
+            _orig_req_dur = moviepy.decorators.requires_duration
+
+            def _safe_req_dur(func, clip, *args, **kwargs):
+                if getattr(clip, "duration", None) is None:
+                    if hasattr(clip, "reader") and getattr(clip.reader, "duration", None):
+                        clip.duration = clip.reader.duration
+                        clip.end = clip.reader.duration
+                    elif hasattr(clip, "audio") and getattr(clip.audio, "duration", None):
+                        clip.duration = clip.audio.duration
+                        clip.end = clip.audio.duration
+                return _orig_req_dur(func, clip, *args, **kwargs)
+
+            moviepy.decorators.requires_duration = _safe_req_dur
+        except Exception:
+            pass
+
     except Exception as e:
         print(f"Warning: Could not apply MoviePy compatibility shims: {e}")
 
@@ -454,6 +496,7 @@ IMPORTANT RULES:
 8. Always close all clips at the end with `.close()`.
 9. Use ONLY the methods and patterns shown in the reference below.
 10. Quality preference: {quality_hints}
+11. CRITICAL: Every ColorClip, ImageClip, or TextClip MUST have its duration set (e.g. `ColorClip(size, color, duration=clip.duration)` or `.with_duration(clip.duration)`) before applying effects or compositing. Never pass `duration=None` to `write_videofile()` or `with_effects()`.
 
 --- MOVIEPY REFERENCE (USE ONLY THESE METHODS) ---
 {cheatsheet}

@@ -88,15 +88,16 @@ final = concatenate_videoclips([clip1, clip2, clip3], method="compose")
 final = concatenate_videoclips([clip1, clip2], method="chain")
 ```
 
-## 11. COLOR CLIP (solid color video)
+## 11. COLOR CLIP (solid color video / banner)
 ```python
-color_clip = ColorClip(size=(1280, 720), color=(255, 0, 0), duration=3)
-# color is RGB tuple
+# ALWAYS provide duration (or call .with_duration(clip.duration))
+color_clip = ColorClip(size=(1280, 720), color=(255, 0, 0), duration=clip.duration)
 ```
+## CRITICAL: ColorClip/ImageClip default duration is None. ALWAYS specify `duration=clip.duration` or call `.with_duration(clip.duration)` before applying effects or compositing!
 
 ## 12. COMPOSITE VIDEO (overlay)
 ```python
-# Overlay clip2 on top of clip1
+# Overlay banner on top of main clip
 band = ColorClip(size=(clip.w, 60), color=(30, 30, 30), duration=clip.duration)
 band = band.with_position((0, clip.h - 60)).with_opacity(0.7)
 final = CompositeVideoClip([clip, band])
@@ -111,6 +112,7 @@ audio = AudioFileClip("music.mp3").subclipped(0, clip.duration)
 final = clip.with_audio(audio)
 ```
 ## NOTE: MoviePy 2.x uses `with_audio()` NOT `set_audio()`.
+
 
 ## 14. EFFECTS & FILTERS (MoviePy 2.x syntax)
 ```python
