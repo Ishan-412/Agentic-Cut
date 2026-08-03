@@ -112,7 +112,39 @@ final = clip.with_audio(audio)
 ```
 ## NOTE: MoviePy 2.x uses `with_audio()` NOT `set_audio()`.
 
-## 14. WRITE OUTPUT — Standard Args (ALWAYS USE THESE)
+## 14. EFFECTS & FILTERS (MoviePy 2.x syntax)
+```python
+import moviepy.video.fx as vfx
+
+# Black & White / Grayscale
+bw_clip = clip.with_effects([vfx.BlackAndWhite()])
+
+# Invert Colors / Negative
+inv_clip = clip.with_effects([vfx.InvertColors()])
+
+# Fade In & Fade Out (duration in seconds)
+fade_clip = clip.with_effects([vfx.FadeIn(1.0), vfx.FadeOut(1.0)])
+
+# Mirror / Flip
+mirrored = clip.with_effects([vfx.MirrorX()])  # Horizontal flip
+flipped = clip.with_effects([vfx.MirrorY()])   # Vertical flip
+
+# Brightness / Contrast Adjustment
+enhanced = clip.with_effects([vfx.LumContrast(lum=20, contrast=0.2)])
+
+# Custom Frame Transform (Numpy function on each frame)
+# Use image_transform(), NOT fl_image()
+import numpy as np
+def tint_red(frame):
+    f = frame.copy()
+    f[:, :, 0] = np.clip(f[:, :, 0] * 1.2, 0, 255)
+    return f
+tinted = clip.image_transform(tint_red)
+```
+## NOTE: MoviePy 2.x uses `clip.image_transform()` NOT `clip.fl_image()`.
+## NOTE: Effects are applied via `clip.with_effects([vfx.EffectName(...)])`.
+
+## 15. WRITE OUTPUT — Standard Args (ALWAYS USE THESE)
 ```python
 clip.write_videofile(
     "output.mp4",
@@ -123,13 +155,13 @@ clip.write_videofile(
 )
 ```
 
-## 15. CLOSE CLIPS (Memory Management)
+## 16. CLOSE CLIPS (Memory Management)
 ```python
 clip.close()
 final.close()
 ```
 
-## 16. COMPLETE EXAMPLE — Trim + Speed + Mute + Save
+## 17. COMPLETE EXAMPLE — Trim + Speed + Mute + Save
 ```python
 from moviepy import VideoFileClip
 
@@ -146,7 +178,7 @@ clip.close()
 result.close()
 ```
 
-## 17. COMPLETE EXAMPLE — Crop to 9:16 Vertical + Save
+## 18. COMPLETE EXAMPLE — Crop to 9:16 Vertical + Save
 ```python
 from moviepy import VideoFileClip
 
@@ -166,13 +198,14 @@ clip.close()
 cropped.close()
 ```
 
-## 18. COMPLETE EXAMPLE — Trim first 1 second off (start from 1s)
+## 19. COMPLETE EXAMPLE — Black and White Filter + Save
 ```python
 from moviepy import VideoFileClip
+import moviepy.video.fx as vfx
 
 clip = VideoFileClip(video_path)
-result = clip.subclipped(1, clip.duration)
-result.write_videofile(
+bw = clip.with_effects([vfx.BlackAndWhite()])
+bw.write_videofile(
     output_path,
     codec="libx264",
     audio_codec="aac",
@@ -180,11 +213,14 @@ result.write_videofile(
     logger=None
 )
 clip.close()
-result.close()
+bw.close()
 ```
 
 ## FORBIDDEN / NON-EXISTENT METHODS — DO NOT USE
 - `from moviepy.editor import ...` — DOES NOT EXIST in MoviePy 2.x
+- `clip.fl_image()` — does not exist in 2.x, use `clip.image_transform()`
+- `clip.fl()` — does not exist in 2.x, use `clip.transform()`
+- `clip.fl_time()` — does not exist in 2.x, use `clip.time_transform()`
 - `clip.subclip()` — does not exist in 2.x, use `clip.subclipped()`
 - `clip.resize()` — does not exist in 2.x, use `clip.resized()`
 - `clip.crop()` — does not exist in 2.x, use `clip.cropped()`

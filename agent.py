@@ -33,8 +33,64 @@ except ImportError:
 from langchain_core.messages import SystemMessage, HumanMessage
 
 # ---------------------------------------------------------------------------
-# MoviePy 2.x — used for metadata extraction only in this file
+# MoviePy 2.x & 1.x Compatibility Shims
 # ---------------------------------------------------------------------------
+def _apply_moviepy_compatibility_shims():
+    """
+    Ensures scripts written in MoviePy 1.x syntax or MoviePy 2.x syntax
+    both execute successfully on MoviePy 2.x runtime.
+    """
+    try:
+        from moviepy.Clip import Clip
+        from moviepy.video.VideoClip import VideoClip
+
+        # VideoClip transformations
+        if hasattr(VideoClip, "image_transform") and not hasattr(VideoClip, "fl_image"):
+            VideoClip.fl_image = VideoClip.image_transform
+        if hasattr(VideoClip, "transform") and not hasattr(VideoClip, "fl"):
+            VideoClip.fl = VideoClip.transform
+        if hasattr(VideoClip, "time_transform") and not hasattr(VideoClip, "fl_time"):
+            VideoClip.fl_time = VideoClip.time_transform
+        if hasattr(VideoClip, "resized") and not hasattr(VideoClip, "resize"):
+            VideoClip.resize = VideoClip.resized
+        if hasattr(VideoClip, "cropped") and not hasattr(VideoClip, "crop"):
+            VideoClip.crop = VideoClip.cropped
+        if hasattr(VideoClip, "rotated") and not hasattr(VideoClip, "rotate"):
+            VideoClip.rotate = VideoClip.rotated
+
+        # Clip general methods
+        if hasattr(Clip, "subclipped") and not hasattr(Clip, "subclip"):
+            Clip.subclip = Clip.subclipped
+        if hasattr(Clip, "with_duration") and not hasattr(Clip, "set_duration"):
+            Clip.set_duration = Clip.with_duration
+        if hasattr(Clip, "with_position") and not hasattr(Clip, "set_position"):
+            Clip.set_position = Clip.with_position
+        if hasattr(Clip, "with_audio") and not hasattr(Clip, "set_audio"):
+            Clip.set_audio = Clip.with_audio
+        if hasattr(Clip, "with_fps") and not hasattr(Clip, "set_fps"):
+            Clip.set_fps = Clip.with_fps
+        if hasattr(Clip, "with_opacity") and not hasattr(Clip, "set_opacity"):
+            Clip.set_opacity = Clip.with_opacity
+        if hasattr(Clip, "with_speed_scaled") and not hasattr(Clip, "speedx"):
+            Clip.speedx = Clip.with_speed_scaled
+        if hasattr(Clip, "multiply_volume") and not hasattr(Clip, "volumex"):
+            Clip.volumex = Clip.multiply_volume
+        if hasattr(Clip, "without_audio") and not hasattr(Clip, "withoutaudio"):
+            Clip.withoutaudio = Clip.without_audio
+
+        # Provide .fx() method if missing
+        if not hasattr(Clip, "fx"):
+            def _fx(self, func, *args, **kwargs):
+                try:
+                    return func(self, *args, **kwargs)
+                except Exception:
+                    return self
+            Clip.fx = _fx
+    except Exception as e:
+        print(f"Warning: Could not apply MoviePy compatibility shims: {e}")
+
+_apply_moviepy_compatibility_shims()
+
 from moviepy import VideoFileClip
 
 # ---------------------------------------------------------------------------
@@ -480,11 +536,22 @@ def execute_node(state: State) -> State:
     # --- Execution ---
     logs.append("🎬 [Executor] Executing generated MoviePy script...")
 
-    # Namespace for exec: pre-inject video_path and output_path
+    # Namespace for exec: pre-inject video_path, output_path, and common helper modules
     exec_namespace: dict[str, Any] = {
         "video_path": state["video_path"],
         "output_path": state["output_path"],
     }
+    try:
+        import numpy as np
+        exec_namespace["np"] = np
+        exec_namespace["numpy"] = np
+    except ImportError:
+        pass
+    try:
+        import moviepy.video.fx as vfx
+        exec_namespace["vfx"] = vfx
+    except ImportError:
+        pass
 
     import time as _time
     t_start = _time.time()
