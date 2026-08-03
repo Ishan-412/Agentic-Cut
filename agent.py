@@ -33,7 +33,7 @@ except ImportError:
 from langchain_core.messages import SystemMessage, HumanMessage
 
 # ---------------------------------------------------------------------------
-# MoviePy 2.x & 1.x Compatibility Shims
+# MoviePy 2.x & 1.x Universal Compatibility Layer
 # ---------------------------------------------------------------------------
 def _apply_moviepy_compatibility_shims():
     """
@@ -41,10 +41,81 @@ def _apply_moviepy_compatibility_shims():
     both execute successfully on MoviePy 2.x runtime.
     """
     try:
+        import sys
+        import moviepy as _mp
         from moviepy.Clip import Clip
         from moviepy.video.VideoClip import VideoClip
+        from moviepy.audio.AudioClip import AudioClip
+        import moviepy.video.fx as _vfx
+        import moviepy.audio.fx as _afx
 
-        # VideoClip transformations
+        # 1. Alias legacy module import paths in sys.modules
+        sys.modules["moviepy.editor"] = _mp
+        sys.modules["moviepy.video.fx.all"] = _vfx
+        sys.modules["moviepy.audio.fx.all"] = _afx
+
+        # 2. Map legacy snake_case vfx functions
+        legacy_vfx = {
+            "blackwhite": _vfx.BlackAndWhite,
+            "black_and_white": _vfx.BlackAndWhite,
+            "fadein": _vfx.FadeIn,
+            "fade_in": _vfx.FadeIn,
+            "fadeout": _vfx.FadeOut,
+            "fade_out": _vfx.FadeOut,
+            "invert_colors": _vfx.InvertColors,
+            "mirror_x": _vfx.MirrorX,
+            "mirror_y": _vfx.MirrorY,
+            "colorx": _vfx.MultiplyColor,
+            "multiply_color": _vfx.MultiplyColor,
+            "speedx": _vfx.MultiplySpeed,
+            "multiply_speed": _vfx.MultiplySpeed,
+            "resize": _vfx.Resize,
+            "crop": _vfx.Crop,
+            "rotate": _vfx.Rotate,
+            "loop": _vfx.Loop,
+            "lum_contrast": _vfx.LumContrast,
+            "gamma_corr": _vfx.GammaCorrection,
+            "accel_decel": _vfx.AccelDecel,
+            "crossfadein": _vfx.CrossFadeIn,
+            "crossfadeout": _vfx.CrossFadeOut,
+            "time_mirror": _vfx.TimeMirror,
+        }
+        for old_name, cls_obj in legacy_vfx.items():
+            if not hasattr(_vfx, old_name):
+                def make_wrapper(effect_cls):
+                    def wrapper(*args, **kwargs):
+                        if args and isinstance(args[0], Clip):
+                            clip_arg = args[0]
+                            return clip_arg.with_effects([effect_cls(*args[1:], **kwargs)])
+                        return effect_cls(*args, **kwargs)
+                    return wrapper
+                setattr(_vfx, old_name, make_wrapper(cls_obj))
+
+        # 3. Smart Clip.fx adapter
+        def _smart_fx(self, func, *args, **kwargs):
+            if isinstance(func, type) and hasattr(_vfx, func.__name__):
+                return self.with_effects([func(*args, **kwargs)])
+            try:
+                res = func(self, *args, **kwargs)
+                if isinstance(res, Clip):
+                    return res
+            except Exception:
+                pass
+            try:
+                effect_inst = func(*args, **kwargs)
+                return self.with_effects([effect_inst])
+            except Exception:
+                return self
+
+        Clip.fx = _smart_fx
+
+        # 4. Direct helper methods on VideoClip and AudioClip
+        VideoClip.fadein = lambda self, d: self.with_effects([_vfx.FadeIn(d)])
+        VideoClip.fadeout = lambda self, d: self.with_effects([_vfx.FadeOut(d)])
+        AudioClip.audio_fadein = lambda self, d: self.with_effects([_afx.AudioFadeIn(d)])
+        AudioClip.audio_fadeout = lambda self, d: self.with_effects([_afx.AudioFadeOut(d)])
+
+        # 5. VideoClip transformations
         if hasattr(VideoClip, "image_transform") and not hasattr(VideoClip, "fl_image"):
             VideoClip.fl_image = VideoClip.image_transform
         if hasattr(VideoClip, "transform") and not hasattr(VideoClip, "fl"):
@@ -58,7 +129,7 @@ def _apply_moviepy_compatibility_shims():
         if hasattr(VideoClip, "rotated") and not hasattr(VideoClip, "rotate"):
             VideoClip.rotate = VideoClip.rotated
 
-        # Clip general methods
+        # 6. Clip general methods
         if hasattr(Clip, "subclipped") and not hasattr(Clip, "subclip"):
             Clip.subclip = Clip.subclipped
         if hasattr(Clip, "with_duration") and not hasattr(Clip, "set_duration"):
@@ -71,6 +142,10 @@ def _apply_moviepy_compatibility_shims():
             Clip.set_fps = Clip.with_fps
         if hasattr(Clip, "with_opacity") and not hasattr(Clip, "set_opacity"):
             Clip.set_opacity = Clip.with_opacity
+        if hasattr(Clip, "with_start") and not hasattr(Clip, "set_start"):
+            Clip.set_start = Clip.with_start
+        if hasattr(Clip, "with_end") and not hasattr(Clip, "set_end"):
+            Clip.set_end = Clip.with_end
         if hasattr(Clip, "with_speed_scaled") and not hasattr(Clip, "speedx"):
             Clip.speedx = Clip.with_speed_scaled
         if hasattr(Clip, "multiply_volume") and not hasattr(Clip, "volumex"):
@@ -78,16 +153,7 @@ def _apply_moviepy_compatibility_shims():
         if hasattr(Clip, "without_audio") and not hasattr(Clip, "withoutaudio"):
             Clip.withoutaudio = Clip.without_audio
 
-        # Provide .fx() method if missing
-        if not hasattr(Clip, "fx"):
-            def _fx(self, func, *args, **kwargs):
-                try:
-                    return func(self, *args, **kwargs)
-                except Exception:
-                    return self
-            Clip.fx = _fx
-
-        # Patch CompositeVideoClip to ensure duration is never None if any subclip has duration
+        # 7. CompositeVideoClip duration preservation
         try:
             from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip as OrigComposite
             _orig_composite_init = OrigComposite.__init__
@@ -109,7 +175,7 @@ def _apply_moviepy_compatibility_shims():
         except Exception:
             pass
 
-        # Patch requires_duration decorator to auto-recover duration from reader/audio if available
+        # 8. Patch requires_duration decorator to auto-recover duration
         try:
             import moviepy.decorators
             _orig_req_dur = moviepy.decorators.requires_duration
